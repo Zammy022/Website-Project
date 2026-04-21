@@ -1,2 +1,2 @@
-# Do YOU remember this?
-This is our school final project!
+# My final project
+this is my final project for school.

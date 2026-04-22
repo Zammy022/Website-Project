@@ -72,6 +72,16 @@ updateSignupAccessUi();
 // --- Sign up ---
 const signupForm = document.getElementById('signup-form');
 if (signupForm) {
+    const signupAgeInput = document.getElementById('signup-age');
+    const signupAgeValue = document.getElementById('signup-age-value');
+
+    if (signupAgeInput && signupAgeValue) {
+        signupAgeValue.textContent = signupAgeInput.value;
+        signupAgeInput.addEventListener('input', () => {
+            signupAgeValue.textContent = signupAgeInput.value;
+        });
+    }
+
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -80,9 +90,23 @@ if (signupForm) {
             return;
         }
 
+        const age = Number(document.getElementById('signup-age')?.value);
         const username = document.getElementById('username').value.trim();
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
+
+        if (!Number.isFinite(age) || age < 1) {
+            alert('Please select a valid age.');
+            return;
+        }
+
+        setSignupBlocked(age < 13);
+        updateSignupAccessUi();
+
+        if (age < 13) {
+            alert('Users under 13 cannot sign up in this browser session.');
+            return;
+        }
 
         try {
             const res = await fetch('/signup', {
@@ -108,21 +132,8 @@ const signinForm = document.getElementById('signin-form');
 if (signinForm) {
     signinForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const age = Number(document.getElementById('signin-age').value);
         const email = document.getElementById('signin-email').value.trim();
         const password = document.getElementById('signin-password').value;
-
-        if (!Number.isFinite(age) || age < 1) {
-            alert('Please enter a valid age.');
-            return;
-        }
-
-        setSignupBlocked(age < 13);
-        updateSignupAccessUi();
-
-        if (age < 13) {
-            alert('Users under 13 cannot sign up in this browser session.');
-        }
 
         try {
             const res = await fetch('/signin', {
@@ -185,3 +196,14 @@ if (signoutBtn) {
         window.location.href = 'index.html';
     });
 }
+const invertCursor = document.getElementById('invert-cursor');
+
+window.addEventListener('mousemove', (event) => {
+    invertCursor.style.left = event.clientX + 'px';
+    invertCursor.style.top = event.clientY + 'px';
+    invertCursor.style.opacity = '1';
+});
+
+window.addEventListener('mouseleave', () => {
+    invertCursor.style.opacity = '0';
+});

@@ -19,10 +19,13 @@
             <input type="text" id="username" placeholder="Username" required>
             <input type="email" id="email" placeholder="Email" required>
             <input type="password" id="password" placeholder="Password" required>
+            <label for="signup-age">Age: <span id="signup-age-value">18</span></label>
+            <input type="range" id="signup-age" min="1" max="120" value="18" required>
             <button type="submit">Create Account</button>
         </form>
         <p id="signup-age-message" class="form-link age-notice" hidden>Sign up is disabled in this browser session because the age entered was under 13.</p>
         <p class="form-link">Already have an account? <a href="signin.html">Sign In</a></p>
+        <div class="invert-cursor" id="invert-cursor" aria-hidden="true"></div>
     </body>
     <script src="code.js"></script>
 </html>

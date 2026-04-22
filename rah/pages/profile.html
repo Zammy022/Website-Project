@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Profile Settings</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <nav class="top-nav">
+            <a href="index.html" class="nav-logo" aria-label="Uni Chat home">
+                <img src="/elements/Uni-Chat-Logo.png" alt="Uni Chat logo" class="nav-logo-img">
+            </a>
+            <a href="signup.html" class="nav-signup-btn">Sign Up</a>
+            <a href="profile.html" id="nav-profile" style="display:none">
+                <img id="nav-profile-img" class="nav-profile-img" src="/default-avatar.svg" alt="Profile">
+            </a>
+        </nav>
+        <h1>Profile Settings</h1>
+        <div class="profile-card">
+            <img id="profile-preview" class="profile-preview" src="/default-avatar.svg" alt="Profile Picture">
+            <h3 id="profile-username"></h3>
+            <form class="signup-form" id="profile-img-form">
+                <input type="file" id="profile-img-input" accept="image/*" required>
+                <button type="submit">Update Profile Picture</button>
+            </form>
+            <button id="signout-btn" class="signout-btn">Sign Out</button>
+        </div>
+    </body>
+    <script src="code.js"></script>
+</html>

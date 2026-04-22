@@ -13,30 +13,142 @@ body {
     background-color: #222;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    padding: 0 20px;
     height: 60px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+}
+
+.nav-signup-btn {
+    text-decoration: none;
+    color: #fff;
+    background-color: #4a7c4e;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.nav-signup-btn:hover {
+    background-color: #5fa364;
 }
 
 .nav-logo {
     text-decoration: none;
     color: #fff;
+    display: flex;
+    align-items: center;
 }
 
-.logo-placeholder {
-    font-size: 1.2rem;
-    font-weight: bold;
-    letter-spacing: 2px;
-    padding: 8px 16px;
-    border: 2px dashed #fff;
-    border-radius: 6px;
+.nav-logo-img {
+    height: 42px;
+    width: auto;
+    display: block;
 }
-h1, h3{
+h1, h3, p{
     color: #fff;
     background-color: #000000;
     width: fit-content;
     text-align: center;
     padding: 10px 20px;
     border-radius: 8px;
-    margin: 20px 0;
+    margin: 20px auto;
+}
+
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.signup-form input {
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 1rem;
+    width: 260px;
+}
+
+.signup-form button {
+    padding: 10px 24px;
+    border-radius: 6px;
+    border: none;
+    background-color: #4a7c4e;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.signup-form button:hover {
+    background-color: #5fa364;
+}
+
+.form-link {
+    color: #ccc;
+    margin-top: 10px;
+}
+
+.form-link a {
+    color: #7ec882;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.form-link a:hover {
+    text-decoration: underline;
+}
+
+.disabled-link {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.age-notice {
+    color: #ffb6b6;
+}
+
+.nav-profile-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #7ec882;
+    display: block;
+}
+
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+}
+
+.profile-preview {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #7ec882;
+}
+
+.signout-btn {
+    padding: 8px 22px;
+    border-radius: 6px;
+    border: none;
+    background-color: #7a3030;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.signout-btn:hover {
+    background-color: #a04040;
 }

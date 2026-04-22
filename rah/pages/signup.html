@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sign Up</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <nav class="top-nav">
+            <a href="index.html" class="nav-logo" aria-label="Uni Chat home">
+                <img src="/elements/Uni-Chat-Logo.png" alt="Uni Chat logo" class="nav-logo-img">
+            </a>
+            <a href="signup.html" class="nav-signup-btn">Sign Up</a>
+            <a href="profile.html" id="nav-profile" style="display:none">
+                <img id="nav-profile-img" class="nav-profile-img" src="/default-avatar.svg" alt="Profile">
+            </a>
+        </nav>
+        <h1>Sign Up</h1>
+        <form class="signup-form" id="signup-form">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Create Account</button>
+        </form>
+        <p id="signup-age-message" class="form-link age-notice" hidden>Sign up is disabled in this browser session because the age entered was under 13.</p>
+        <p class="form-link">Already have an account? <a href="signin.html">Sign In</a></p>
+    </body>
+    <script src="code.js"></script>
+</html>

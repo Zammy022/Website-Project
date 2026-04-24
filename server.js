@@ -125,8 +125,13 @@ app.get('/chat/messages', (req, res) => {
     if (!req.session.userEmail) {
         return res.status(401).json({ error: 'Please sign in to access chat.' });
     }
+    const users = readUsers();
+    const profileImgByEmail = new Map(users.map((user) => [user.email, user.profileImg || null]));
     const messages = readChatMessages();
-    const recentMessages = messages.slice(-100);
+    const recentMessages = messages.slice(-100).map((msg) => ({
+        ...msg,
+        profileImg: profileImgByEmail.get(msg.email) || null
+    }));
     res.json({ messages: recentMessages });
 });
 

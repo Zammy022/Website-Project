@@ -160,6 +160,9 @@ if (chatForm) {
     const chatInput = document.getElementById('chat-input');
     let cursorX = null;
     let cursorY = null;
+    let currentUserEmail = '';
+    let currentUserProfileImg = '/default-avatar.svg';
+    let lastMessagesSignature = '';
 
     const escapeHtml = (value) => String(value)
         .replaceAll('&', '&amp;')
@@ -215,6 +218,20 @@ if (chatForm) {
         return distanceFromBottom <= threshold;
     };
 
+    const resolveProfileImg = (msg) => {
+        if (msg.profileImg) {
+            return msg.profileImg;
+        }
+        if (currentUserEmail && msg.email === currentUserEmail) {
+            return currentUserProfileImg;
+        }
+        return '/default-avatar.svg';
+    };
+
+    const getMessagesSignature = (messages) => messages
+        .map((msg) => [msg.email || '', msg.username || '', msg.message || '', msg.createdAt || '', resolveProfileImg(msg)].join('|'))
+        .join('\n');
+
     const renderMessages = (messages, forceScrollToBottom = false) => {
         const shouldStickToBottom = forceScrollToBottom || isNearBottom(chatMessages);
         const previousDistanceFromBottom = chatMessages.scrollHeight - chatMessages.scrollTop;
@@ -224,7 +241,8 @@ if (chatForm) {
             const row = document.createElement('div');
             row.className = 'chat-msg';
             const stamp = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            row.innerHTML = `<strong>${escapeHtml(msg.username)}</strong><span class="chat-time">${escapeHtml(stamp)}</span><br>${formatSecretMessage(msg.message)}`;
+            const profileImg = resolveProfileImg(msg);
+            row.innerHTML = `<div class="chat-msg-head"><img class="chat-msg-avatar" src="${escapeHtml(profileImg)}" alt="${escapeHtml(msg.username)} profile" loading="eager" onerror="this.onerror=null;this.src='/default-avatar.svg';"><strong>${escapeHtml(msg.username)}</strong><span class="chat-time">${escapeHtml(stamp)}</span></div><div class="chat-msg-body">${formatSecretMessage(msg.message)}</div>`;
             chatMessages.appendChild(row);
         });
 
@@ -239,6 +257,15 @@ if (chatForm) {
 
     const loadMessages = async () => {
         try {
+            if (!currentUserEmail) {
+                const meRes = await fetch('/me');
+                if (meRes.ok) {
+                    const me = await meRes.json();
+                    currentUserEmail = String(me.email || '');
+                    currentUserProfileImg = me.profileImg || '/default-avatar.svg';
+                }
+            }
+
             const res = await fetch('/chat/messages');
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
@@ -249,7 +276,14 @@ if (chatForm) {
                 return;
             }
             const data = await res.json();
-            renderMessages(data.messages || []);
+            const messages = data.messages || [];
+            const nextSignature = getMessagesSignature(messages);
+            if (nextSignature === lastMessagesSignature) {
+                applySecretVisibility();
+                return;
+            }
+            lastMessagesSignature = nextSignature;
+            renderMessages(messages);
         } catch {
             // Keep page usable even if polling fails temporarily.
         }

@@ -236,6 +236,25 @@ label {
     line-height: 1.35;
 }
 
+.chat-msg-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-msg-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #456445;
+    flex: 0 0 26px;
+}
+
+.chat-msg-body {
+    margin-top: 4px;
+}
+
 .secret-stack {
     --secret-radius: 40px;
     position: relative;
@@ -248,7 +267,7 @@ label {
 }
 
 .secret-text-back {
-    color: #7ec3ff;
+    color: transparent;
 }
 
 .secret-text-front {
@@ -257,9 +276,16 @@ label {
     inset: 0;
     pointer-events: none;
     background-image: radial-gradient(circle var(--secret-radius) at var(--lx, -9999px) var(--ly, -9999px),
-        transparent 0%, transparent 99.9%, #f4fff4 100%);
+        #f4fff4 0%, #f4fff4 99.9%, transparent 100%);
     -webkit-background-clip: text;
     background-clip: text;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .secret-text-front {
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+    }
 }
 
 .chat-msg strong {

@@ -153,6 +153,154 @@ if (signinForm) {
     });
 }
 
+// --- Chat room ---
+const chatForm = document.getElementById('chat-form');
+if (chatForm) {
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    let cursorX = null;
+    let cursorY = null;
+
+    const escapeHtml = (value) => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+    const formatSecretMessage = (rawMessage) => {
+        const text = String(rawMessage || '');
+        let output = '';
+        let cursor = 0;
+
+        while (cursor < text.length) {
+            const start = text.indexOf('<', cursor);
+            if (start === -1) {
+                output += escapeHtml(text.slice(cursor));
+                break;
+            }
+
+            const end = text.indexOf('>', start + 1);
+            if (end === -1) {
+                output += escapeHtml(text.slice(cursor));
+                break;
+            }
+
+            output += escapeHtml(text.slice(cursor, start));
+            const secretChunk = text.slice(start + 1, end);
+            output += secretChunk
+                ? `<span class="secret-stack"><span class="secret-text secret-text-back">${escapeHtml(secretChunk)}</span><span class="secret-text secret-text-front">${escapeHtml(secretChunk)}</span></span>`
+                : '&lt;&gt;';
+            cursor = end + 1;
+        }
+
+        return output;
+    };
+
+    const applySecretVisibility = () => {
+        chatMessages.querySelectorAll('.secret-stack').forEach((el) => {
+            if (cursorX === null) {
+                el.style.setProperty('--lx', '-999px');
+                el.style.setProperty('--ly', '-999px');
+            } else {
+                const rect = el.getBoundingClientRect();
+                el.style.setProperty('--lx', (cursorX - rect.left) + 'px');
+                el.style.setProperty('--ly', (cursorY - rect.top) + 'px');
+            }
+        });
+    };
+
+    const isNearBottom = (element, threshold = 24) => {
+        const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+        return distanceFromBottom <= threshold;
+    };
+
+    const renderMessages = (messages, forceScrollToBottom = false) => {
+        const shouldStickToBottom = forceScrollToBottom || isNearBottom(chatMessages);
+        const previousDistanceFromBottom = chatMessages.scrollHeight - chatMessages.scrollTop;
+
+        chatMessages.innerHTML = '';
+        messages.forEach((msg) => {
+            const row = document.createElement('div');
+            row.className = 'chat-msg';
+            const stamp = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            row.innerHTML = `<strong>${escapeHtml(msg.username)}</strong><span class="chat-time">${escapeHtml(stamp)}</span><br>${formatSecretMessage(msg.message)}`;
+            chatMessages.appendChild(row);
+        });
+
+        if (shouldStickToBottom) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+            chatMessages.scrollTop = Math.max(chatMessages.scrollHeight - previousDistanceFromBottom, 0);
+        }
+
+        applySecretVisibility();
+    };
+
+    const loadMessages = async () => {
+        try {
+            const res = await fetch('/chat/messages');
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401) {
+                    alert(data.error || 'Please sign in to use chat.');
+                    window.location.href = 'signin.html';
+                }
+                return;
+            }
+            const data = await res.json();
+            renderMessages(data.messages || []);
+        } catch {
+            // Keep page usable even if polling fails temporarily.
+        }
+    };
+
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        try {
+            const res = await fetch('/chat/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                alert(data.error || 'Could not send message.');
+                if (res.status === 401) {
+                    window.location.href = 'signin.html';
+                }
+                return;
+            }
+            chatInput.value = '';
+            await loadMessages();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            applySecretVisibility();
+        } catch {
+            alert('Could not connect to the server.');
+        }
+    });
+
+    window.addEventListener('mousemove', (event) => {
+        cursorX = event.clientX;
+        cursorY = event.clientY;
+        applySecretVisibility();
+    });
+
+    window.addEventListener('mouseleave', () => {
+        cursorX = null;
+        cursorY = null;
+        applySecretVisibility();
+    });
+
+    chatMessages.addEventListener('scroll', applySecretVisibility);
+
+    loadMessages();
+    setInterval(loadMessages, 3000);
+}
+
 // --- Profile settings ---
 const profileImgForm = document.getElementById('profile-img-form');
 if (profileImgForm) {
@@ -197,13 +345,14 @@ if (signoutBtn) {
     });
 }
 const invertCursor = document.getElementById('invert-cursor');
+if (invertCursor) {
+    window.addEventListener('mousemove', (event) => {
+        invertCursor.style.left = event.clientX + 'px';
+        invertCursor.style.top = event.clientY + 'px';
+        invertCursor.style.opacity = '1';
+    });
 
-window.addEventListener('mousemove', (event) => {
-    invertCursor.style.left = event.clientX + 'px';
-    invertCursor.style.top = event.clientY + 'px';
-    invertCursor.style.opacity = '1';
-});
-
-window.addEventListener('mouseleave', () => {
-    invertCursor.style.opacity = '0';
-});
+    window.addEventListener('mouseleave', () => {
+        invertCursor.style.opacity = '0';
+    });
+}

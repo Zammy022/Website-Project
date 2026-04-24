@@ -7,6 +7,7 @@ const multer = require('multer');
 const app = express();
 const PORT = 3000;
 const USERS_FILE = path.join(__dirname, 'rah', 'data', 'users.json');
+const CHAT_FILE = path.join(__dirname, 'rah', 'data', 'chat.json');
 const UPLOADS_DIR = path.join(__dirname, 'rah', 'data', 'uploads');
 
 const storage = multer.diskStorage({
@@ -43,6 +44,14 @@ function readUsers() {
 }
 function writeUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+function readChatMessages() {
+    return JSON.parse(fs.readFileSync(CHAT_FILE, 'utf8'));
+}
+
+function writeChatMessages(messages) {
+    fs.writeFileSync(CHAT_FILE, JSON.stringify(messages, null, 2));
 }
 
 // Sign up
@@ -109,6 +118,53 @@ app.post('/profile/image', (req, res) => {
         writeUsers(users);
         res.json({ success: true, profileImg: imgPath });
     });
+});
+
+// Chat messages
+app.get('/chat/messages', (req, res) => {
+    if (!req.session.userEmail) {
+        return res.status(401).json({ error: 'Please sign in to access chat.' });
+    }
+    const messages = readChatMessages();
+    const recentMessages = messages.slice(-100);
+    res.json({ messages: recentMessages });
+});
+
+app.post('/chat/messages', (req, res) => {
+    if (!req.session.userEmail) {
+        return res.status(401).json({ error: 'Please sign in to send messages.' });
+    }
+
+    const message = String(req.body.message || '').trim();
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required.' });
+    }
+    if (message.length > 300) {
+        return res.status(400).json({ error: 'Message is too long.' });
+    }
+
+    const users = readUsers();
+    const user = users.find(u => u.email === req.session.userEmail);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const messages = readChatMessages();
+    messages.push({
+        username: user.username,
+        email: user.email,
+        message,
+        createdAt: new Date().toISOString()
+    });
+
+    const maxMessages = 500;
+    if (messages.length > maxMessages) {
+        writeChatMessages(messages.slice(-maxMessages));
+    } else {
+        writeChatMessages(messages);
+    }
+
+    res.json({ success: true });
 });
 
 app.listen(PORT, () => {

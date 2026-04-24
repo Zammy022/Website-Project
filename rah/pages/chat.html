@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Welcome</title>
+        <title>Chat Room</title>
         <link rel="stylesheet" href="style.css">
     </head>
-    <body>
-        <h1>Welcome!</h1>
-        <h3>The universal chat room</h3>
-        <p>Connect with people from all around the world in real-time. Everyone all talks at the same time!</p>
-        <p><a href="chat.html" class="home-chat-btn">Enter Chat Room</a></p>
+    <body class="chat-page">
         <nav class="top-nav">
             <a href="index.html" class="nav-logo" aria-label="Uni Chat home">
                 <img src="/elements/Uni-Chat-Logo.png" alt="Uni Chat logo" class="nav-logo-img">
@@ -20,6 +16,16 @@
             </a>
         </nav>
 
+        <h1>Global Chat</h1>
+        <p>Signed-in users can message everyone in this room.</p>
+
+        <section class="chat-shell">
+            <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+            <form id="chat-form" class="chat-form">
+                <input type="text" id="chat-input" placeholder="Write a message..." maxlength="300" required>
+                <button type="submit">Send</button>
+            </form>
+        </section>
         <div class="invert-cursor" id="invert-cursor" aria-hidden="true"></div>
     </body>
     <script src="code.js"></script>

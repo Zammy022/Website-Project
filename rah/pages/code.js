@@ -178,6 +178,36 @@ if (chatForm) {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 
+    const BLUR_WORDS = new RegExp(
+        '\\b(' + [
+            'fuck', 'fucking', 'fucker', 'fucks', 'fucked', 'motherfucker', 'motherfucking',
+            'shit', 'shitting', 'shitter', 'bullshit',
+            'cunt', 'cunts',
+            'cock', 'cocks', 'cocksucker',
+            'bitch', 'bitches',
+            'ass', 'asshole', 'assholes', 'asses',
+            'bastard', 'bastards',
+            'damn', 'damnit', 'goddamn', 'goddamned',
+            'piss', 'pissed', 'pisser',
+            'whore', 'whores', 'slut', 'sluts',
+            'dick', 'dicks', 'dickhead',
+            'pussy', 'pussies',
+            'n\u0069gger', 'n\u0069ggers', 'n\u0069gga', 'n\u0069ggas',
+            'f\u0061ggot', 'f\u0061ggots', 'f\u0061g', 'f\u0061gs',
+            'r\u0065tard', 'r\u0065tards', 'r\u0065tarded',
+            'sp\u0069c', 'sp\u0069cs', 'sp\u0069ck',
+            'ch\u0069nk', 'ch\u0069nks',
+            'k\u0069ke', 'k\u0069kes',
+            'c\u0072acke\u0072',
+            'dyke', 'dykes',
+            'tw\u0061t', 'tw\u0061ts'
+        ].join('|') + ')\\b',
+        'gi'
+    );
+
+    const applyBlur = (text) => text.replace(BLUR_WORDS, (word) =>
+        `<span class="blurred-word" title="Blurred word">${escapeHtml(word)}</span>`);
+
     const formatSecretMessage = (rawMessage) => {
         const text = String(rawMessage || '');
         let output = '';
@@ -186,20 +216,20 @@ if (chatForm) {
         while (cursor < text.length) {
             const start = text.indexOf('<', cursor);
             if (start === -1) {
-                output += escapeHtml(text.slice(cursor));
+                output += applyBlur(escapeHtml(text.slice(cursor)));
                 break;
             }
 
             const end = text.indexOf('>', start + 1);
             if (end === -1) {
-                output += escapeHtml(text.slice(cursor));
+                output += applyBlur(escapeHtml(text.slice(cursor)));
                 break;
             }
 
-            output += escapeHtml(text.slice(cursor, start));
+            output += applyBlur(escapeHtml(text.slice(cursor, start)));
             const secretChunk = text.slice(start + 1, end);
             output += secretChunk
-                ? `<span class="secret-stack"><span class="secret-text secret-text-back">${escapeHtml(secretChunk)}</span><span class="secret-text secret-text-front">${escapeHtml(secretChunk)}</span></span>`
+                ? `<span class="secret-stack"><span class="secret-text secret-text-back">${applyBlur(escapeHtml(secretChunk))}</span><span class="secret-text secret-text-front">${applyBlur(escapeHtml(secretChunk))}</span></span>`
                 : '&lt;&gt;';
             cursor = end + 1;
         }

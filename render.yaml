@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: remember-this
+    name: Uni-Chat
     env: node
     plan: free
     buildCommand: npm ci

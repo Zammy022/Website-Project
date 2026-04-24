@@ -7,38 +7,46 @@ const multer = require('multer');
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const BASE_DATA_DIR = path.join(__dirname, 'rah', 'data');
-const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : BASE_DATA_DIR;
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
-const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const SESSION_SECRET = process.env.SESSION_SECRET || 'rth-dev-secret-change-me';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const ADMIN_USERNAMES = new Set(['Zammy022']);
 
-if (IS_PRODUCTION && !process.env.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET environment variable is required in production.');
+function resolveDataDir() {
+    const candidate = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : BASE_DATA_DIR;
+    if (candidate === BASE_DATA_DIR) return BASE_DATA_DIR;
+    try {
+        fs.mkdirSync(candidate, { recursive: true });
+        fs.mkdirSync(path.join(candidate, 'uploads'), { recursive: true });
+        fs.accessSync(candidate, fs.constants.W_OK);
+        return candidate;
+    } catch {
+        console.warn(`DATA_DIR "${candidate}" is not accessible, falling back to default data directory.`);
+        return BASE_DATA_DIR;
+    }
 }
 
+const DATA_DIR = resolveDataDir();
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+
+console.log(`Data directory: ${DATA_DIR}`);
+
 function ensureDataStorage() {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
     if (!fs.existsSync(UPLOADS_DIR)) {
         fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     }
-
     if (!fs.existsSync(USERS_FILE)) {
         const defaultUsers = path.join(BASE_DATA_DIR, 'users.json');
-        if (fs.existsSync(defaultUsers)) {
+        if (fs.existsSync(defaultUsers) && DATA_DIR !== BASE_DATA_DIR) {
             fs.copyFileSync(defaultUsers, USERS_FILE);
         } else {
             fs.writeFileSync(USERS_FILE, '[]');
         }
     }
-
     if (!fs.existsSync(CHAT_FILE)) {
         const defaultChat = path.join(BASE_DATA_DIR, 'chat.json');
-        if (fs.existsSync(defaultChat)) {
+        if (fs.existsSync(defaultChat) && DATA_DIR !== BASE_DATA_DIR) {
             fs.copyFileSync(defaultChat, CHAT_FILE);
         } else {
             fs.writeFileSync(CHAT_FILE, '[]');

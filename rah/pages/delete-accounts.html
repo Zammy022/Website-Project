@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Welcome</title>
+        <title>Admin - Delete Accounts</title>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <h1>Welcome!</h1>
-        <h3>The universal chat room</h3>
-        <p>Connect with people from all around the world in real-time. Everyone all talks at the same time!</p>
-        <p><a href="chat.html" class="home-chat-btn">Enter Chat Room</a></p>
         <nav class="top-nav">
             <a href="index.html" class="nav-logo" aria-label="Uni Chat home">
                 <img src="/elements/Uni-Chat-Logo.png" alt="Uni Chat logo" class="nav-logo-img">
@@ -20,6 +16,14 @@
                 <img id="nav-profile-img" class="nav-profile-img" src="/default-avatar.svg" alt="Profile">
             </a>
         </nav>
+
+        <h1>Delete Accounts</h1>
+        <p>Admin controls for account moderation.</p>
+
+        <section class="admin-shell">
+            <p id="admin-accounts-status" class="form-link"></p>
+            <div id="admin-accounts-list" class="admin-accounts-list"></div>
+        </section>
 
         <div class="invert-cursor" id="invert-cursor" aria-hidden="true"></div>
     </body>

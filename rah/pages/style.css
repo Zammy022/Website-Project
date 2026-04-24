@@ -30,6 +30,20 @@ body {
     transition: background-color 0.2s;
 }
 
+.nav-admin-btn {
+    text-decoration: none;
+    color: #fff;
+    background-color: #7a3030;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.nav-admin-btn:hover {
+    background-color: #a04040;
+}
+
 .nav-chat-btn {
     text-decoration: none;
     color: #fff;
@@ -298,6 +312,21 @@ label {
     margin-left: 8px;
 }
 
+.chat-msg-delete {
+    margin-left: auto;
+    background-color: #7a3030;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.chat-msg-delete:hover {
+    background-color: #a04040;
+}
+
 .chat-form {
     margin-top: 12px;
     display: flex;
@@ -324,4 +353,86 @@ label {
 
 .chat-form button:hover {
     background-color: #5fa364;
+}
+
+.admin-shell {
+    width: min(920px, 92vw);
+    margin: 20px auto;
+    background-color: #161f16;
+    border: 1px solid #3c543c;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.admin-accounts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-user-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #243024;
+}
+
+.admin-user-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.admin-user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #6aa56f;
+}
+
+.admin-user-name {
+    color: #ecffec;
+    font-weight: bold;
+    text-align: left;
+}
+
+.admin-user-email {
+    color: #b8ccb8;
+    font-size: 0.9rem;
+    text-align: left;
+    word-break: break-all;
+}
+
+.admin-role-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background-color: #aa8a2f;
+    color: #17150d;
+}
+
+.admin-delete-btn {
+    background-color: #7a3030;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.admin-delete-btn:hover {
+    background-color: #a04040;
+}
+
+.admin-delete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

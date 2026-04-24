@@ -49,6 +49,7 @@ function updateSignupAccessUi() {
 async function initNav() {
     const signupBtn = document.querySelector('.nav-signup-btn');
     const navProfile = document.getElementById('nav-profile');
+    const navAdmin = document.getElementById('nav-admin');
     if (!navProfile) return;
 
     try {
@@ -57,13 +58,18 @@ async function initNav() {
             const user = await res.json();
             if (signupBtn) signupBtn.style.display = 'none';
             navProfile.style.display = 'flex';
+            if (navAdmin) {
+                navAdmin.style.display = user.isAdmin ? 'inline-flex' : 'none';
+            }
             const img = document.getElementById('nav-profile-img');
             if (img) img.src = user.profileImg || '/default-avatar.svg';
         } else {
             navProfile.style.display = 'none';
+            if (navAdmin) navAdmin.style.display = 'none';
         }
     } catch {
         if (navProfile) navProfile.style.display = 'none';
+        if (navAdmin) navAdmin.style.display = 'none';
     }
 }
 initNav();
@@ -163,6 +169,7 @@ if (chatForm) {
     let currentUserEmail = '';
     let currentUserProfileImg = '/default-avatar.svg';
     let lastMessagesSignature = '';
+    let isCurrentUserAdmin = false;
 
     const escapeHtml = (value) => String(value)
         .replaceAll('&', '&amp;')
@@ -229,8 +236,25 @@ if (chatForm) {
     };
 
     const getMessagesSignature = (messages) => messages
-        .map((msg) => [msg.email || '', msg.username || '', msg.message || '', msg.createdAt || '', resolveProfileImg(msg)].join('|'))
+        .map((msg) => [msg.id || '', msg.email || '', msg.username || '', msg.message || '', msg.createdAt || '', resolveProfileImg(msg)].join('|'))
         .join('\n');
+
+    const deleteMessage = async (messageId) => {
+        try {
+            const res = await fetch(`/chat/messages/${encodeURIComponent(messageId)}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                alert(data.error || 'Could not delete message.');
+                if (res.status === 401) {
+                    window.location.href = 'signin.html';
+                }
+                return;
+            }
+            await loadMessages();
+        } catch {
+            alert('Could not connect to the server.');
+        }
+    };
 
     const renderMessages = (messages, forceScrollToBottom = false) => {
         const shouldStickToBottom = forceScrollToBottom || isNearBottom(chatMessages);
@@ -242,7 +266,10 @@ if (chatForm) {
             row.className = 'chat-msg';
             const stamp = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const profileImg = resolveProfileImg(msg);
-            row.innerHTML = `<div class="chat-msg-head"><img class="chat-msg-avatar" src="${escapeHtml(profileImg)}" alt="${escapeHtml(msg.username)} profile" loading="eager" onerror="this.onerror=null;this.src='/default-avatar.svg';"><strong>${escapeHtml(msg.username)}</strong><span class="chat-time">${escapeHtml(stamp)}</span></div><div class="chat-msg-body">${formatSecretMessage(msg.message)}</div>`;
+            const deleteControl = isCurrentUserAdmin && msg.id
+                ? `<button class="chat-msg-delete" type="button" data-message-id="${escapeHtml(msg.id)}">Delete</button>`
+                : '';
+            row.innerHTML = `<div class="chat-msg-head"><img class="chat-msg-avatar" src="${escapeHtml(profileImg)}" alt="${escapeHtml(msg.username)} profile" loading="eager" onerror="this.onerror=null;this.src='/default-avatar.svg';"><strong>${escapeHtml(msg.username)}</strong><span class="chat-time">${escapeHtml(stamp)}</span>${deleteControl}</div><div class="chat-msg-body">${formatSecretMessage(msg.message)}</div>`;
             chatMessages.appendChild(row);
         });
 
@@ -263,6 +290,7 @@ if (chatForm) {
                     const me = await meRes.json();
                     currentUserEmail = String(me.email || '');
                     currentUserProfileImg = me.profileImg || '/default-avatar.svg';
+                    isCurrentUserAdmin = Boolean(me.isAdmin);
                 }
             }
 
@@ -330,9 +358,107 @@ if (chatForm) {
     });
 
     chatMessages.addEventListener('scroll', applySecretVisibility);
+    chatMessages.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!target.classList.contains('chat-msg-delete')) return;
+        const messageId = target.getAttribute('data-message-id');
+        if (!messageId) return;
+        const confirmed = window.confirm('Delete this message?');
+        if (!confirmed) return;
+        deleteMessage(messageId);
+    });
 
     loadMessages();
     setInterval(loadMessages, 3000);
+}
+
+// --- Admin: delete accounts ---
+const adminAccountsList = document.getElementById('admin-accounts-list');
+if (adminAccountsList) {
+    const adminAccountsStatus = document.getElementById('admin-accounts-status');
+
+    const escapeHtml = (value) => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+    const setAdminStatus = (text) => {
+        if (adminAccountsStatus) {
+            adminAccountsStatus.textContent = text;
+        }
+    };
+
+    const loadAccounts = async () => {
+        try {
+            const meRes = await fetch('/me');
+            if (!meRes.ok) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            const me = await meRes.json();
+            if (!me.isAdmin) {
+                window.location.href = 'chat.html';
+                return;
+            }
+
+            const res = await fetch('/admin/accounts');
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setAdminStatus(data.error || 'Could not load accounts.');
+                return;
+            }
+
+            const users = data.users || [];
+            if (!users.length) {
+                adminAccountsList.innerHTML = '';
+                setAdminStatus('No accounts found.');
+                return;
+            }
+
+            setAdminStatus('');
+            adminAccountsList.innerHTML = users.map((user) => {
+                const avatar = user.profileImg || '/default-avatar.svg';
+                const adminBadge = user.isAdmin ? '<span class="admin-role-badge">Admin</span>' : '';
+                const deleteDisabled = user.isCurrentUser ? 'disabled' : '';
+                const deleteLabel = user.isCurrentUser ? 'Current Account' : 'Delete Account';
+                return `<div class="admin-user-row"><div class="admin-user-main"><img class="admin-user-avatar" src="${escapeHtml(avatar)}" alt="${escapeHtml(user.username)} profile" onerror="this.onerror=null;this.src='/default-avatar.svg';"><div><div class="admin-user-name">${escapeHtml(user.username)} ${adminBadge}</div><div class="admin-user-email">${escapeHtml(user.email)}</div></div></div><button type="button" class="admin-delete-btn" data-email="${escapeHtml(user.email)}" ${deleteDisabled}>${deleteLabel}</button></div>`;
+            }).join('');
+        } catch {
+            setAdminStatus('Could not connect to the server.');
+        }
+    };
+
+    adminAccountsList.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!target.classList.contains('admin-delete-btn')) return;
+        const email = target.getAttribute('data-email');
+        if (!email) return;
+
+        const confirmed = window.confirm(`Delete account ${email}? This also deletes their messages.`);
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/admin/accounts/${encodeURIComponent(email)}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setAdminStatus(data.error || 'Could not delete account.');
+                return;
+            }
+            if (data.signedOut) {
+                window.location.href = 'signin.html';
+                return;
+            }
+            await loadAccounts();
+        } catch {
+            setAdminStatus('Could not connect to the server.');
+        }
+    });
+
+    loadAccounts();
 }
 
 // --- Profile settings ---

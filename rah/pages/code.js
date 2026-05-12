@@ -1,4 +1,49 @@
 const signupBlockKey = 'signupBlockedUnder13';
+const themeStorageKey = 'uniChatTheme';
+const defaultTheme = 'forest';
+const availableThemes = new Set(['forest', 'ocean', 'sunrise', 'high-contrast']);
+
+function normalizeTheme(theme) {
+    if (typeof theme !== 'string') return defaultTheme;
+    const trimmedTheme = theme.trim();
+    return availableThemes.has(trimmedTheme) ? trimmedTheme : defaultTheme;
+}
+
+function applyTheme(theme) {
+    const safeTheme = normalizeTheme(theme);
+    document.documentElement.setAttribute('data-theme', safeTheme);
+    return safeTheme;
+}
+
+function loadTheme() {
+    let nextTheme = defaultTheme;
+
+    try {
+        nextTheme = normalizeTheme(localStorage.getItem(themeStorageKey));
+    } catch {
+        nextTheme = defaultTheme;
+    }
+
+    return applyTheme(nextTheme);
+}
+
+function saveTheme(theme) {
+    const safeTheme = applyTheme(theme);
+    try {
+        localStorage.setItem(themeStorageKey, safeTheme);
+    } catch {
+        // Keep using the selected theme even if storage is unavailable.
+    }
+    return safeTheme;
+}
+
+loadTheme();
+
+window.addEventListener('storage', (event) => {
+    if (event.key === themeStorageKey) {
+        applyTheme(event.newValue || defaultTheme);
+    }
+});
 
 function isSignupBlocked() {
     return sessionStorage.getItem(signupBlockKey) === 'true';
@@ -164,12 +209,14 @@ const chatForm = document.getElementById('chat-form');
 if (chatForm) {
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
+    const chatResetTimer = document.getElementById('chat-reset-timer');
     let cursorX = null;
     let cursorY = null;
     let currentUserEmail = '';
     let currentUserProfileImg = '/default-avatar.svg';
     let lastMessagesSignature = '';
     let isCurrentUserAdmin = false;
+    let chatNextResetAt = null;
 
     const escapeHtml = (value) => String(value)
         .replaceAll('&', '&amp;')
@@ -269,6 +316,29 @@ if (chatForm) {
         .map((msg) => [msg.id || '', msg.email || '', msg.username || '', msg.message || '', msg.createdAt || '', resolveProfileImg(msg)].join('|'))
         .join('\n');
 
+    const formatRemaining = (remainingMs) => {
+        if (remainingMs <= 0) return '00:00:00';
+        const totalSeconds = Math.floor(remainingMs / 1000);
+        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    };
+
+    const renderResetTimer = () => {
+        if (!chatResetTimer) return;
+        if (!chatNextResetAt) {
+            chatResetTimer.textContent = 'Chat resets every 12 hours.';
+            return;
+        }
+        const remainingMs = Date.parse(chatNextResetAt) - Date.now();
+        if (!Number.isFinite(remainingMs)) {
+            chatResetTimer.textContent = 'Chat resets every 12 hours.';
+            return;
+        }
+        chatResetTimer.textContent = `Next chat reset in ${formatRemaining(remainingMs)}.`;
+    };
+
     const deleteMessage = async (messageId) => {
         try {
             const res = await fetch(`/chat/messages/${encodeURIComponent(messageId)}`, { method: 'DELETE' });
@@ -335,6 +405,8 @@ if (chatForm) {
             }
             const data = await res.json();
             const messages = data.messages || [];
+            chatNextResetAt = data.nextResetAt || null;
+            renderResetTimer();
             const nextSignature = getMessagesSignature(messages);
             if (nextSignature === lastMessagesSignature) {
                 applySecretVisibility();
@@ -400,6 +472,8 @@ if (chatForm) {
     });
 
     loadMessages();
+    renderResetTimer();
+    setInterval(renderResetTimer, 1000);
     setInterval(loadMessages, 3000);
 }
 
@@ -494,6 +568,23 @@ if (adminAccountsList) {
 // --- Profile settings ---
 const profileImgForm = document.getElementById('profile-img-form');
 if (profileImgForm) {
+    const themePicker = document.getElementById('theme-picker');
+    const themePickerStatus = document.getElementById('theme-picker-status');
+
+    if (themePicker) {
+        themePicker.value = document.documentElement.getAttribute('data-theme') || defaultTheme;
+        themePicker.addEventListener('change', () => {
+            const selectedTheme = saveTheme(themePicker.value);
+            if (themePickerStatus) {
+                const label = selectedTheme
+                    .split('-')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+                themePickerStatus.textContent = `Theme updated: ${label}`;
+            }
+        });
+    }
+
     // Load current profile info
     fetch('/me').then(r => r.ok ? r.json() : null).then(user => {
         if (!user) { window.location.href = 'signin.html'; return; }

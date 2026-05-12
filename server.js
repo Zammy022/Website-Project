@@ -28,7 +28,9 @@ function resolveDataDir() {
 const DATA_DIR = resolveDataDir();
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
+const CHAT_META_FILE = path.join(DATA_DIR, 'chat-meta.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const CHAT_RESET_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
 console.log(`Data directory: ${DATA_DIR}`);
 
@@ -51,6 +53,9 @@ function ensureDataStorage() {
         } else {
             fs.writeFileSync(CHAT_FILE, '[]');
         }
+    }
+    if (!fs.existsSync(CHAT_META_FILE)) {
+        fs.writeFileSync(CHAT_META_FILE, JSON.stringify(createDefaultChatMeta(), null, 2));
     }
 }
 
@@ -145,6 +150,76 @@ function readChatMessages() {
 function writeChatMessages(messages) {
     fs.writeFileSync(CHAT_FILE, JSON.stringify(messages, null, 2));
 }
+
+function createDefaultChatMeta(startAtMs = Date.now()) {
+    return {
+        lastResetAt: null,
+        nextResetAt: new Date(startAtMs + CHAT_RESET_INTERVAL_MS).toISOString(),
+        resetIntervalMs: CHAT_RESET_INTERVAL_MS
+    };
+}
+
+function readChatMeta() {
+    let meta;
+    try {
+        meta = JSON.parse(fs.readFileSync(CHAT_META_FILE, 'utf8'));
+    } catch {
+        meta = createDefaultChatMeta();
+    }
+
+    const nextResetMs = Date.parse(String(meta?.nextResetAt || ''));
+    if (!Number.isFinite(nextResetMs)) {
+        const repairedMeta = createDefaultChatMeta();
+        writeChatMeta(repairedMeta);
+        return repairedMeta;
+    }
+
+    return {
+        lastResetAt: meta?.lastResetAt || null,
+        nextResetAt: new Date(nextResetMs).toISOString(),
+        resetIntervalMs: CHAT_RESET_INTERVAL_MS
+    };
+}
+
+function writeChatMeta(meta) {
+    fs.writeFileSync(CHAT_META_FILE, JSON.stringify({
+        lastResetAt: meta.lastResetAt || null,
+        nextResetAt: meta.nextResetAt,
+        resetIntervalMs: CHAT_RESET_INTERVAL_MS
+    }, null, 2));
+}
+
+function ensureChatResetSchedule() {
+    const now = Date.now();
+    const meta = readChatMeta();
+    let nextResetMs = Date.parse(meta.nextResetAt);
+
+    if (!Number.isFinite(nextResetMs)) {
+        const repairedMeta = createDefaultChatMeta(now);
+        writeChatMeta(repairedMeta);
+        return repairedMeta;
+    }
+
+    if (now < nextResetMs) {
+        return meta;
+    }
+
+    while (nextResetMs <= now) {
+        nextResetMs += CHAT_RESET_INTERVAL_MS;
+    }
+
+    writeChatMessages([]);
+    const updatedMeta = {
+        lastResetAt: new Date(now).toISOString(),
+        nextResetAt: new Date(nextResetMs).toISOString(),
+        resetIntervalMs: CHAT_RESET_INTERVAL_MS
+    };
+    writeChatMeta(updatedMeta);
+    return updatedMeta;
+}
+
+ensureChatResetSchedule();
+setInterval(ensureChatResetSchedule, 60 * 1000);
 
 function getSessionUser(req) {
     if (!req.session.userEmail) {
@@ -248,6 +323,7 @@ app.get('/chat/messages', (req, res) => {
     if (!currentUser) {
         return res.status(401).json({ error: 'Please sign in to access chat.' });
     }
+    const chatMeta = ensureChatResetSchedule();
     const users = readUsers();
     const profileImgByEmail = new Map(users.map((user) => [user.email, user.profileImg || null]));
     const messages = readChatMessages();
@@ -256,7 +332,12 @@ app.get('/chat/messages', (req, res) => {
         profileImg: profileImgByEmail.get(msg.email) || null,
         canDelete: Boolean(currentUser.isAdmin)
     }));
-    res.json({ messages: recentMessages });
+    res.json({
+        messages: recentMessages,
+        nextResetAt: chatMeta.nextResetAt,
+        lastResetAt: chatMeta.lastResetAt,
+        resetIntervalMs: CHAT_RESET_INTERVAL_MS
+    });
 });
 
 app.post('/chat/messages', (req, res) => {
@@ -278,6 +359,7 @@ app.post('/chat/messages', (req, res) => {
         return res.status(404).json({ error: 'User not found.' });
     }
 
+    ensureChatResetSchedule();
     const messages = readChatMessages();
     messages.push({
         id: createMessageId(),

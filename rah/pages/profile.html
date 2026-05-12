@@ -24,6 +24,16 @@
                 <input type="file" id="profile-img-input" accept="image/*" required>
                 <button type="submit">Update Profile Picture</button>
             </form>
+            <section class="settings-panel" aria-label="Appearance settings">
+                <label for="theme-picker" class="settings-label">Theme</label>
+                <select id="theme-picker" class="theme-picker">
+                    <option value="forest">Forest</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="sunrise">Sunrise</option>
+                    <option value="high-contrast">High Contrast</option>
+                </select>
+                <p id="theme-picker-status" class="theme-picker-status">Choose a theme for all pages.</p>
+            </section>
             <button id="signout-btn" class="signout-btn">Sign Out</button>
         </div>
         <div class="invert-cursor" id="invert-cursor" aria-hidden="true"></div>
